@@ -1,0 +1,6 @@
+Spring:
+  data:
+    Mongodb:
+    host:localhost:
+      port:27017:
+        database:Shooping:
