@@ -1,6 +1,9 @@
-Spring:
+spring:
+  application:
+    name: MEDICINE-SERVICE
   data:
-    Mongodb:
-    host:localhost:
-      port:27017:
-        database:Shooping:
+    mongodb:
+      uri: mongodb://localhost:27017/PractoMedicine
+
+server:
+  port: 8089

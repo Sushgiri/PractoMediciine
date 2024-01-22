@@ -1,19 +1,25 @@
 package com.product.shopping.service;
 
-import com.product.shopping.dto.Productdto;
+import com.product.shopping.config.RestemplateConfig;
+import com.product.shopping.controller.PaymentController;
+import com.product.shopping.dto.Medicinedto;
+
+import com.product.shopping.dto.Orderdto;
+import com.product.shopping.entity.Medicine;
 import com.product.shopping.entity.Order;
-import com.product.shopping.entity.Product;
-import com.product.shopping.exception.Invalidentries;
+
+import com.product.shopping.exception.InvalidInputException;
 import com.product.shopping.exception.OutOfStockException;
 import com.product.shopping.exception.ResourceNotFoundException;
-import com.product.shopping.repository.Orderrepo;
-import com.product.shopping.repository.ProductRepository;
+import com.product.shopping.repository.MedicineRepository;
+import com.product.shopping.repository.Orderrepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 
@@ -24,129 +30,123 @@ public class ProductService {
 
 
     @Autowired
-    private  Orderrepo orderrepo;
+    private Orderrepository orderrepository;
 
     @Autowired
-    private ProductRepository prodcutrepo;
+    private MedicineRepository medicineRepository;
+
+    @Autowired
+    private RestemplateConfig restemplateConfig;
+    @Autowired
+    private PaymentController paymentController;
+
+    @Autowired
+    private Order orderstatus;
 
 
 
-
-    public Productdto createproduct(Product  product){
-       Product save = prodcutrepo.save(product);
-        Productdto fetcheddto = maptodto(save);
+    public Medicinedto createproduct(Medicine medicine){
+          String mId = UUID.randomUUID().toString();
+          medicine.setMedicineId(mId);
+        Medicine save = medicineRepository.save(medicine);
+        Medicinedto fetcheddto = maptodto(save);
         return fetcheddto;
     }
+    public void deleteproduct(String medicineId){
 
-    public void deleteproduct(int id){
-
-        if(prodcutrepo.findById(id).isEmpty()) {
-            throw new ResourceNotFoundException("Product Not Found With id" + id);
+        if(medicineRepository.findByMedicineId(medicineId)== null) {
+            throw new ResourceNotFoundException("Product Not Found With id" + medicineId);
         }
-            prodcutrepo.deleteById(id);
+        medicineRepository.deleteById(medicineId);
     }
-
-    public Productdto maptodto( Product product){
-        Productdto dto = new Productdto();
-        dto.setId((int) product.getId());
-        dto.setProductName(product.getProductName());
-        dto.setCost(product.getCost());
-        dto.setStock(product.getStock());
-
+    public Medicinedto maptodto( Medicine medicine){
+        Medicinedto dto = new Medicinedto();
+        dto.setName(medicine.getName());
+        dto.setManufacturer(medicine.getManufacturer());
+        dto.setMedicineId(medicine.getMedicineId());
+        dto.setPrice(medicine.getPrice());
+        dto.setStock(medicine.getStock());
         return dto;
     }
-
-    public List<Productdto> getall() {
-
-        List<Product>  products= prodcutrepo.findAll();
-
-        List<Productdto> dtos = products.stream().map(p->maptodto(p)).collect(Collectors.toList());
-
+    public List<Medicinedto> getall() {
+        List<Medicine>  availablemedicines= medicineRepository.findAll();
+        List<Medicinedto> dtos = availablemedicines.stream().map(p->maptodto(p)).collect(Collectors.toList());
         return dtos;
     }
-
-    public void update(int id, Product product) {
-        if(prodcutrepo.findById(id).isEmpty()) {
-            throw new ResourceNotFoundException("Product Not Found With id" + id);
+    public void update(String medicineId, Medicine medicine) {
+        if(medicineRepository.findByMedicineId(medicineId)== null) {
+            throw new ResourceNotFoundException("medicine  Not Found With id" + medicineId);
         }
-        prodcutrepo.save(product);
-
+     medicineRepository.save(medicine);
     }
-
-    public void placeorder(long ProductId,Order order) {
-        Product product = prodcutrepo.findById((int) ProductId).orElseThrow(
-                ()-> new ResourceNotFoundException("product not found with id:"+ProductId)
-        );
-
-
-        Order savingorder = new Order();
-
-        if(product.getStock()< order.getItems()){
+    public String placeorder(String MedicineId,String buyerId, Orderdto corder) {
+        Medicine  medicine= medicineRepository.findByMedicineId(MedicineId);
+        if(medicine ==null){
+            throw  new ResourceNotFoundException("Medicine not found");
+        }
+        if(medicine.getStock()< corder.getQuantity()){
             throw  new OutOfStockException("We Can't Accept Your Order as we are running out  of stock, we will notify you when stock will be availble");
         }
-        else {
-            savingorder.setId(order.getId());
-            savingorder.setItems(order.getItems());
-            savingorder.setReview(order.getReview());
-            savingorder.setBuyer(order.getBuyer());
-            List<Order> orders = new ArrayList<>();
-            product.setProductName(product.getProductName());
-            product.setCost(product.getCost());
-            product.setId(product.getId());
-             product.setStock(product.getStock()-order.getItems());
-
-             prodcutrepo.save(product);
-            orders.add(savingorder);
-            savingorder.setProduct(product);
-
-            orderrepo.save(savingorder);
-
+//        //restemplateConfig.getRestTemplate().postForEntity("http://localhost:8090/", StripeTokenDto)
+//      if(cardresponse != null){
+//          restemplateConfig.getRestTemplate().getForObject("http://localhost:9095/payments/charge",String.class);
+//      }
+        Order order = new Order();
+        String id = UUID.randomUUID().toString();
+        order.setId(id);
+        order.setMedicineId(medicine.getMedicineId());
+        order.setQuantity(corder.getQuantity());  // Make sure this value is correctly obtained
+      if(corder.getQuantity() == 0) {
+          return "please enter quantity ";
+      }
+        order.setBuyerid(buyerId);
+        Date date = new Date();
+        String todayDate = date.toString();
+        order.setOrderdate(todayDate);
+        orderstatus.setPaid(false);
+        orderstatus.setId(order.getId());
+        orderstatus.setOrderdate(order.getOrderdate());
+        orderstatus.setQuantity(order.getQuantity());
+        orderstatus.setBuyerid(order.getBuyerid());
+        orderstatus.setMedicineId(order.getMedicineId());
+    return"Enter Payment Card Details:     http://localhost:8089/medicine/payment/"+buyerId;
         }
-
-
-
-
-    }
 
     public void deleteorder(long orderid) {
 //        if(orderrepo.findById(orderid).isEmpty()) {
 //            throw new ResourceNotFoundException("Product Not Found With id" + orderid);
 //        }
-
     }
-
-
-
-    public String createmultiple(List<Product> products) {
-        List<Product> fetched = new ArrayList<>();
-        List<Long> returned = new ArrayList<>();
-
-        fetched.addAll(products);
+    public String createmultiple(List<Medicine> medicines) {
+        List<Medicine> fetched = new ArrayList<>();
+        List<String> meid= new ArrayList<>();
+        fetched.addAll(medicines);
         int count =0;
-        for(Product filtered:fetched){
-            if(filtered.getId()==0){
-                throw  new ResourceNotFoundException("Id of onr of a product is not enterd ");
+        for(Medicine filtered:fetched){
+            if(filtered.getId().equals(null)){
+                throw  new InvalidInputException("Id of onr of a product is not enterd ");
             }
-            if(filtered.getProductName()==null){
-                throw  new ResourceNotFoundException("Productname is empty of product with id: "+filtered.getId());
+            if(filtered.getName()==null){
+                throw  new InvalidInputException("Productname is empty of product with id: "+filtered.getId());
             } if(filtered.getStock()==0){
-                throw  new ResourceNotFoundException("Stock data is missing for prodcut with id: "+filtered.getId());
-            } if(filtered.getCost()==0) {
-                throw new ResourceNotFoundException("Cost is not entered for product with id: " + filtered.getId());
+                throw  new InvalidInputException("Stock data is missing for prodcut with id: "+filtered.getId());
+            } if(filtered.getPrice()==0) {
+                throw new InvalidInputException("Cost is not entered for product with id: " + filtered.getId());
             }
             count++;
-            List<Product> ids = new ArrayList<>();
-            ids.addAll(fetched);
-            for(Product fetchedids:ids){
-                returned.add(fetchedids.getId());
+            List<Medicine> ids = new ArrayList<>();
+            for(Medicine id:ids){
+                 String idss = UUID.randomUUID().toString();
+                 id.setMedicineId(idss);
+            }
+            for(Medicine fetchedids:ids){
+                meid.add(fetchedids.getMedicineId());
             }
         }
-
         if(count != 0){
-            prodcutrepo.saveAll(products);
-            return "products are Saved"+returned;
+          medicineRepository.saveAll(medicines);
+            return "products are Saved"+meid;
         }
-
        return  null;
     }
 }

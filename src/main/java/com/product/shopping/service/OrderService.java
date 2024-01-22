@@ -1,11 +1,12 @@
 package com.product.shopping.service;
 
+import com.product.shopping.entity.Medicine;
 import com.product.shopping.entity.Order;
 
-import com.product.shopping.entity.Product;
+
 import com.product.shopping.exception.ResourceNotFoundException;
-import com.product.shopping.repository.Orderrepo;
-import com.product.shopping.repository.ProductRepository;
+import com.product.shopping.repository.MedicineRepository;
+import com.product.shopping.repository.Orderrepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,17 +15,17 @@ import java.util.List;
 @Service
 public class OrderService {
 
+ @Autowired
+private Orderrepository orderrepository;
 @Autowired
-private Orderrepo orderrepo;
+private MedicineRepository productRepository;
+public List<Order> readall(String medicineId){
+    Medicine medicine = productRepository.findByMedicineId(medicineId);
+    if(medicine == null){
+        throw new ResourceNotFoundException("There is no medicine with id"+medicineId);
+    }
 
-@Autowired
-private ProductRepository productRepository;
-public List<Order> readall(long id){
-    productRepository.findById((int) id).orElseThrow(
-            ()-> new ResourceNotFoundException("No Order for product with id"+ id)
-    );
-    List<Order> byproductId = orderrepo.findByproductId((int) id);
+    List<Order> byproductId = orderrepository.findByMedicineId(medicineId);
     return byproductId;
-
 }
 }

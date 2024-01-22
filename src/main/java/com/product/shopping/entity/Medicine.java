@@ -2,16 +2,17 @@ package com.product.shopping.entity;
 
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
+
 
 import javax.persistence.*;
 import java.lang.annotation.Documented;
@@ -24,33 +25,31 @@ import java.util.List;
 //@AllArgsConstructor
 //@Table(name = "Product")
 @Data
-@Document(collection = "Product")
-@Builder
+@Document(collection = "Medicine")
 @AllArgsConstructor
 @NoArgsConstructor
-public class Product {
+public class Medicine {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private  String id;
 
-   @Field("product_Name")
-   @NotEmpty(message = "Prductname should not be empty")
-    private String ProductName;
-
-   @Field("cost")
-   @NotNull(message = "Cost should not be empty")
-   private long cost;
-
-@Field("stock")
-@NotNull(message = "Stock should not be empty")
+    private String medicineId;
+       @NotEmpty(message = "Name is required")
+    private String name;
+    @NotEmpty(message = "Manufacturer is required")
+    private String manufacturer;
+    @Positive(message = "Stock must be a positive value")
+    @NotNull(message = "Stock is required")
     private int stock;
+    @Positive(message = "Price must be a positive value")
+    @NotNull(message = "Price is required")
+    private Double price;
 
- private List<Order> order;
+    private boolean prescribed;
 
- // we can use set also
+
+    // we can use set also
  //private Set<Order> order;
 
-//    @OneToMany(mappedBy = "Product",fetch = FetchType.EAGER)
-//    private List<Order>  orders = new ArrayList<>();
 }

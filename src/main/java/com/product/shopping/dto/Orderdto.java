@@ -14,14 +14,9 @@ import javax.persistence.GenerationType;
 public class Orderdto {
 
 
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
 
-    private int items;
+    private int quantity;
 
-    private  String Buyer;
-
-    private String Review;
 
 
 

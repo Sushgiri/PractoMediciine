@@ -33,4 +33,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   return new ResponseEntity<>(errorDetails,INTERNAL_SERVER_ERROR);
 }
 
+
+@ExceptionHandler(InvalidInputException.class)
+    public ResponseEntity<ErrorDetails> invalidInput(
+            InvalidInputException invalidInputException,
+            WebRequest webRequest
+){
+    ErrorDetails errorDetails = new ErrorDetails(new Date(), invalidInputException.getMessage(), webRequest.getDescription(true));
+    return new ResponseEntity<>(errorDetails,INTERNAL_SERVER_ERROR);
+}
+
 }
